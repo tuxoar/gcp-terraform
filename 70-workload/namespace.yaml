@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app
+  labels:
+    # Pod Security Admission — the modern replacement for PodSecurityPolicy.
+    # `restricted` is the strictest baseline: no privileged, no hostPath/hostNetwork,
+    # runAsNonRoot, seccomp RuntimeDefault, capabilities dropped except NET_BIND_SERVICE.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted

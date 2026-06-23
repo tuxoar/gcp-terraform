@@ -1,0 +1,47 @@
+# Default-deny — selects every pod, denies all ingress and egress.
+# Add explicit allow policies on top per workload.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: app
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# Egress allow: DNS to kube-dns + Google API ranges.
+# (Without this, the demo pod can't resolve names or call Secret Manager.)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-and-google-apis
+  namespace: app
+spec:
+  podSelector:
+    matchLabels:
+      app: demo
+  policyTypes:
+    - Egress
+  egress:
+    # DNS to kube-system DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Google APIs (private.googleapis.com / restricted.googleapis.com)
+    # via Private Google Access. These VIP ranges are stable.
+    - to:
+        - ipBlock:
+            cidr: 199.36.153.4/30   # restricted.googleapis.com
+        - ipBlock:
+            cidr: 199.36.153.8/30   # private.googleapis.com
+      ports:
+        - protocol: TCP
+          port: 443

@@ -1,0 +1,57 @@
+# Demo deployment that uses Workload Identity to call Secret Manager.
+# The pod authenticates as app-ksa, federates to app-gsa via the
+# *.svc.id.goog workload pool, and uses the GSA's short-lived access token.
+#
+# If Binary Authorization is enforced (phase 60), this image must be either
+# attested or in the whitelist. The bypass list in 60-supply-chain/main.tf
+# is keyed on a path inside the AR repo, so by default a public gcr.io image
+# is REJECTED — which is exactly the demo you want to show in an interview.
+#
+# To make this image admit:
+#   docker pull gcr.io/google-samples/hello-app:1.0
+#   docker tag gcr.io/google-samples/hello-app:1.0 \
+#     us-central1-docker.pkg.dev/<service_project>/apps/hello:1.0
+#   docker push us-central1-docker.pkg.dev/<service_project>/apps/hello:1.0
+#   # then sign with the attestor (see 60-supply-chain output sign_command_template)
+#   # then update `image:` below to the signed digest reference.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      serviceAccountName: app-ksa
+      # runtimeClassName: gvisor   # uncomment after creating a sandbox node pool
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: app
+          image: gcr.io/google-samples/hello-app:1.0
+          ports:
+            - containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi

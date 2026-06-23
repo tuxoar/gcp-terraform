@@ -1,0 +1,13 @@
+# Half of the Workload Identity binding lives here (the KSA annotation).
+# The other half is the IAM grant on the GSA in phase 50:
+#   roles/iam.workloadIdentityUser
+#   member: serviceAccount:<PROJECT>.svc.id.goog[app/app-ksa]
+#
+# Replace <DEMO_GSA_EMAIL> with `terraform -chdir=../50-gke output -raw demo_gsa_email`
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app-ksa
+  namespace: app
+  annotations:
+    iam.gke.io/gcp-service-account: <DEMO_GSA_EMAIL>

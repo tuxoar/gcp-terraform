@@ -1,0 +1,59 @@
+# Copy into each module's terraform.tfvars and edit. Each phase only uses the
+# subset of these it needs; harmless to keep the full file in each module.
+
+# ---- Phase 00: bootstrap state backend ----
+# Bootstrap creates a dedicated tf-state project + GCS bucket. Sits parallel to
+# the lab folder so destroying the lab doesn't nuke your state.
+# Variables it needs: org_id, billing_account, region (+ optional parent_folder_id,
+# additional_state_admins).
+# After apply, paste `bucket_name` output into each phase's versions.tf.
+
+# ---- Identity / billing ----
+org_id          = "123456789012"           # gcloud organizations list
+billing_account = "0XAAAA-1BBBBB-2CCCCC"   # gcloud beta billing accounts list
+customer_id     = "C0abc1234"              # gcloud organizations describe ORG_ID --format='value(directoryCustomerId)'
+parent_folder_id = ""                       # leave blank to create lab folder at org root, or set to "folders/123…"
+
+# ---- Naming / region ----
+lab_name = "lab"
+region   = "us-central1"
+
+# ---- Phase 10: org policies ----
+# Set to false if a policy conflicts with your personal projects. The first two
+# are the highest-leverage; the rest are defense in depth.
+enforce_disable_sa_keys      = true
+enforce_domain_restriction   = true
+enforce_require_oslogin      = true
+enforce_deny_external_ips    = true
+enforce_uniform_bucket_access = true
+
+# ---- Phase 20: projects ----
+# Project IDs get a random suffix appended for uniqueness.
+host_project_prefix    = "net-host"
+service_project_prefix = "gke-prod"
+
+# ---- Phase 50: GKE / bastion access ----
+# CIDR that's allowed to reach the bastion's SSH port via IAP (your home/office).
+# IAP tunnel CIDR is 35.235.240.0/20 — that's the *source* for the firewall rule.
+bastion_allowed_iap_cidr = "35.235.240.0/20"
+# Master authorized networks — CIDR of the subnet your bastion lives on.
+master_authorized_cidr   = "10.10.0.0/22"
+enable_confidential_nodes = false
+create_bastion            = true
+
+# ---- Phase 20 wiring outputs (paste from previous phase's `terraform output`) ----
+# host_project_id            = "net-host-abc123"
+# service_project_id         = "gke-prod-def456"
+# service_project_number     = "111222333444"
+# lab_folder_id              = "folders/987654321"
+
+# ---- Phase 30 wiring outputs ----
+# network_self_link          = "projects/net-host-abc123/global/networks/prod-vpc"
+# subnet_self_link           = "projects/net-host-abc123/regions/us-central1/subnetworks/gke-nodes"
+# pods_range_name            = "pods"
+# services_range_name        = "services"
+
+# ---- Phase 40 wiring outputs ----
+# kms_etcd_key  = "projects/gke-prod-def456/locations/us-central1/keyRings/gke/cryptoKeys/etcd"
+# kms_disks_key = "projects/gke-prod-def456/locations/us-central1/keyRings/gke/cryptoKeys/disks"
+# kms_ar_key    = "projects/gke-prod-def456/locations/us-central1/keyRings/gke/cryptoKeys/ar"
